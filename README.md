@@ -1,3 +1,12 @@
+---
+title: Solar Classifier API
+emoji: ☀️
+colorFrom: yellow
+colorTo: blue
+sdk: docker
+pinned: false
+---
+
 # Solar Panel Classifier
 
 This project contains a full-stack solution for classifying images of solar panels using a `.keras` deep learning model.
