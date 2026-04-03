@@ -1,0 +1,35 @@
+# Python
+**/venv/
+venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build files
+dist/
+dist-ssr/
+build/
+*.egg-info/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Exclude original broken model if you want, but we should probably push the patched one.
+solar_model.keras
+
+# IDE
+.idea/
+.vscode/
+
+# Keep the mock and patched models
+!solar_model_patched.keras
