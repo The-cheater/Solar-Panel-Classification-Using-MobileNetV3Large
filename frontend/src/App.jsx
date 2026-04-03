@@ -62,7 +62,7 @@ function App() {
     
     try {
       // In production point this to the backend API via environment variable
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://dexter-io-solar-classifier-api.hf.space';
       const response = await fetch(`${apiUrl}/predict`, {
         method: 'POST',
         body: formData,
