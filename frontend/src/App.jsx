@@ -61,8 +61,9 @@ function App() {
     formData.append('file', file);
     
     try {
-      // In production point this to the backend API
-      const response = await fetch('http://localhost:8000/predict', {
+      // In production point this to the backend API via environment variable
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/predict`, {
         method: 'POST',
         body: formData,
       });
