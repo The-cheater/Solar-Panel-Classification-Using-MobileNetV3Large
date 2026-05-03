@@ -3,9 +3,12 @@ import os
 import json
 import logging
 import numpy as np
+import time
 from PIL import Image
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+import firebase_admin
+from firebase_admin import credentials, db
 
 # Set keras backend to torch before importing keras
 os.environ["KERAS_BACKEND"] = "torch"
@@ -28,6 +31,25 @@ class_mapping = {}
 @app.on_event("startup")
 async def load_resources():
     global model, class_mapping
+    
+    # --- FIREBASE INITIALIZATION ---
+    try:
+        if not firebase_admin._apps:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            service_account_path = os.path.join(base_dir, "backend", "serviceAccountKey.json")
+            
+            if os.path.exists(service_account_path):
+                cred = credentials.Certificate(service_account_path)
+                firebase_admin.initialize_app(cred, {
+                    'databaseURL': 'https://solar-cleaning-major-project-default-rtdb.firebaseio.com/'
+                })
+                logging.info("Firebase Admin initialized successfully.")
+            else:
+                logging.warning(f"Firebase serviceAccountKey.json not found at {service_account_path}. Database saves will fail.")
+    except Exception as e:
+        logging.error(f"Error initializing Firebase: {e}")
+
+    # --- MODEL & RESOURCES INITIALIZATION ---
     try:
         # Resolve paths
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -109,9 +131,33 @@ async def predict(file: UploadFile = File(...)):
             
         label = class_mapping.get(str(class_idx), f"Class {class_idx}")
         
+        # --- FIREBASE DATA PUSH ---
+        # Calculate derived values for the DB schema
+        dust_severity = 5 if class_idx == 1 else 0  # 5 for dusty, 0 for clean
+        
+        firebase_payload = {
+            "cleanliness_score": round(float(conf * 100), 2),
+            "cls_probability": round(float(prob if predictions.shape[-1] == 1 else conf), 4),
+            "dust_severity": dust_severity,
+            "label": label,
+            "score": round(float(conf * 100), 2),
+            "stub": False,
+            "timestamp": int(time.time() * 1000)
+        }
+        
+        try:
+            # Assuming you want to push this to the "prediction" node directly
+            # Update or push? Pushing a new child node creates a list over time. Let's set it as the current prediction.
+            ref = db.reference('prediction')
+            ref.set(firebase_payload)
+            logging.info(f"Successfully pushed prediction to Firebase: {firebase_payload}")
+        except Exception as fb_err:
+            logging.error(f"Failed to push to Firebase: {fb_err}")
+            
         return {
             "prediction": label,
-            "confidence": conf
+            "confidence": conf,
+            "firebase_sync": True
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
