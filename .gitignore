@@ -33,3 +33,6 @@ solar_model.keras
 
 # Keep the mock and patched models
 !solar_model_patched.keras
+
+# Secrets
+serviceAccountKey.json
