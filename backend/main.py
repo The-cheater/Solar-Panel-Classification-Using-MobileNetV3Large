@@ -156,19 +156,23 @@ async def predict(file: UploadFile = File(...)):
             "timestamp": int(time.time() * 1000)
         }
         
+        sync_success = True
+        sync_error = None
         try:
             # Assuming you want to push this to the "prediction" node directly
-            # Update or push? Pushing a new child node creates a list over time. Let's set it as the current prediction.
             ref = db.reference('prediction')
             ref.set(firebase_payload)
             logging.info(f"Successfully pushed prediction to Firebase: {firebase_payload}")
         except Exception as fb_err:
+            sync_success = False
+            sync_error = str(fb_err)
             logging.error(f"Failed to push to Firebase: {fb_err}")
             
         return {
             "prediction": label,
             "confidence": conf,
-            "firebase_sync": True
+            "firebase_sync": sync_success,
+            "firebase_error": sync_error
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
