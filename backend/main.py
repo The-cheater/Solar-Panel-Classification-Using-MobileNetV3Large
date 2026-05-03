@@ -35,17 +35,28 @@ async def load_resources():
     # --- FIREBASE INITIALIZATION ---
     try:
         if not firebase_admin._apps:
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            service_account_path = os.path.join(base_dir, "backend", "serviceAccountKey.json")
-            
-            if os.path.exists(service_account_path):
-                cred = credentials.Certificate(service_account_path)
+            firebase_env = os.environ.get("FIREBASE_CREDENTIALS")
+            if firebase_env:
+                # Running in production (Hugging Face)
+                cred_dict = json.loads(firebase_env)
+                cred = credentials.Certificate(cred_dict)
                 firebase_admin.initialize_app(cred, {
                     'databaseURL': 'https://solar-cleaning-major-project-default-rtdb.firebaseio.com/'
                 })
-                logging.info("Firebase Admin initialized successfully.")
+                logging.info("Firebase Admin initialized successfully from Environment Variables.")
             else:
-                logging.warning(f"Firebase serviceAccountKey.json not found at {service_account_path}. Database saves will fail.")
+                # Running locally
+                base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                service_account_path = os.path.join(base_dir, "backend", "serviceAccountKey.json")
+                
+                if os.path.exists(service_account_path):
+                    cred = credentials.Certificate(service_account_path)
+                    firebase_admin.initialize_app(cred, {
+                        'databaseURL': 'https://solar-cleaning-major-project-default-rtdb.firebaseio.com/'
+                    })
+                    logging.info("Firebase Admin initialized successfully from local file.")
+                else:
+                    logging.warning("Firebase credentials not found. Database saves will fail.")
     except Exception as e:
         logging.error(f"Error initializing Firebase: {e}")
 
